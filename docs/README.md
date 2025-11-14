@@ -13,6 +13,7 @@ New to Quality Agent? Start here:
 ### Development Guides
 - [Development Guide](guides/development.md) - Development workflow and best practices
 - [Git Workflow](guides/git-workflow.md) - Branch protection and PR workflow for solo developers
+- [GitHub Webhook Setup](guides/github-webhook-setup.md) - Configure webhooks for PR events
 - [Testing Guide](guides/testing.md) - Testing strategy, running tests, and coverage
 - [Deployment Guide](guides/deployment.md) - Deploying to Docker, docker-compose, and k3s
 - [Troubleshooting](guides/troubleshooting.md) - Common issues and solutions
