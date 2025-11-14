@@ -1,0 +1,180 @@
+# Pre-commit hooks for code quality, security, and documentation
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Update hooks: pre-commit autoupdate
+
+repos:
+  # Ruff - Fast Python linter and formatter (replaces flake8, black, isort)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      # Run the formatter
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Mypy - Static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.5.0
+          - pydantic-settings>=2.1.0
+          - types-requests
+        args:
+          - --strict
+          - --ignore-missing-imports
+          - --allow-untyped-decorators
+        files: ^(app|agents|models)/.*\.py$
+
+  # Bandit - Security vulnerability scanner
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args: [-r, app, agents, models, -ll]
+        pass_filenames: false
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Check file formatting
+      - id: check-yaml
+        args: [--safe]
+      - id: check-toml
+      - id: check-json
+      - id: check-xml
+
+      # Check for common issues
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+
+      # Fix common issues
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+      # Security checks
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args: [--fix]
+        files: \.(md|markdown)$
+
+  # Spell checking
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        args:
+          - --skip=.git,*.pyc,*.pyo,*.pyd,__pycache__,.mypy_cache,.pytest_cache,.ruff_cache
+          - --ignore-words-list=crate,nd,sav,ser
+        exclude: ^(\.env\.example|poetry\.lock)$
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: package.lock.json
+
+  # Python-specific checks
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
+      - id: python-no-eval
+      - id: python-no-log-warn
+      - id: python-use-type-annotations
+
+  # Local hooks for project-specific checks
+  - repo: local
+    hooks:
+      # Run fast unit tests
+      - id: pytest-quick
+        name: pytest-quick
+        entry: pytest
+        args: [tests/unit, -x, --tb=short, -q]
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [commit]
+
+      # Check for missing docstrings
+      - id: check-docstrings
+        name: check-docstrings
+        entry: python
+        language: system
+        args:
+          - -c
+          - |
+            import ast
+            import sys
+            from pathlib import Path
+
+            def check_docstring(node, filepath):
+                """Check if a node has a docstring."""
+                if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.Module)):
+                    docstring = ast.get_docstring(node)
+                    if docstring is None and not node.name.startswith('_'):
+                        if isinstance(node, ast.Module):
+                            print(f"{filepath}: Module missing docstring")
+                        else:
+                            print(f"{filepath}:{node.lineno}: {node.name} missing docstring")
+                        return False
+                return True
+
+            errors = False
+            for filepath in ['app', 'agents', 'models']:
+                for py_file in Path(filepath).rglob('*.py'):
+                    if py_file.name.startswith('__'):
+                        continue
+                    try:
+                        tree = ast.parse(py_file.read_text())
+                        for node in ast.walk(tree):
+                            if not check_docstring(node, py_file):
+                                errors = True
+                    except SyntaxError:
+                        pass
+
+            sys.exit(1 if errors else 0)
+        pass_filenames: false
+        types: [python]
+        stages: [commit]
+
+# Configuration for specific tools
+default_language_version:
+  python: python3.13
+
+# Files to exclude from all hooks
+exclude: ^(\.git|\.venv|venv|\.mypy_cache|\.pytest_cache|\.ruff_cache|__pycache__|build|dist)/
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

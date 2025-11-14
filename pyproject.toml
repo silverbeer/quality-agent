@@ -1,0 +1,247 @@
+[project]
+name = "quality-agent"
+version = "0.1.0"
+description = "AI-powered GitHub webhook service for automated test coverage analysis and intelligent test planning"
+authors = [
+    {name = "Quality Agent Team", email = "team@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = {text = "MIT"}
+keywords = ["github", "webhooks", "testing", "ai", "crewai", "code-quality"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+
+    # Data validation and settings
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # AI and agent orchestration
+    "crewai>=0.1.0",
+    "crewai-tools>=0.1.0",
+
+    # HTTP client
+    "httpx>=0.25.0",
+
+    # GitHub integration
+    "PyGithub>=2.1.0",
+
+    # Logging
+    "structlog>=23.2.0",
+    "python-json-logger>=2.0.0",
+
+    # Environment management
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",  # Parallel test execution
+    "pytest-timeout>=2.2.0",  # Test timeouts
+
+    # Code quality
+    "ruff>=0.1.9",  # Linting and formatting
+    "mypy>=1.7.0",  # Type checking
+    "bandit>=1.7.5",  # Security scanning
+
+    # Pre-commit hooks
+    "pre-commit>=3.5.0",
+
+    # Documentation
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+
+    # Development tools
+    "ipython>=8.17.0",
+    "ipdb>=0.13.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/quality-agent"
+Documentation = "https://github.com/yourusername/quality-agent/tree/main/docs"
+Repository = "https://github.com/yourusername/quality-agent"
+Issues = "https://github.com/yourusername/quality-agent/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Hatchling configuration - tell it which packages to include
+[tool.hatch.build.targets.wheel]
+packages = ["app", "agents", "models"]
+
+# Ruff configuration
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+indent-width = 4
+
+# Enable pycodestyle (E), Pyflakes (F), isort (I), and more
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "RET", # flake8-return
+    "TRY", # tryceratops
+]
+
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "TRY003", # Avoid specifying long messages outside the exception class
+]
+
+# Exclude directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ruff.isort]
+known-first-party = ["app", "agents", "models"]
+force-single-line = false
+lines-after-imports = 2
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+"tests/**/*.py" = ["ARG", "S101"]  # Allow unused arguments and asserts in tests
+
+# Mypy configuration
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Allow some flexibility for third-party libraries
+[[tool.mypy.overrides]]
+module = [
+    "crewai.*",
+    "crewai_tools.*",
+    "github.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",                    # Show summary of all test outcomes
+    "--strict-markers",       # Raise error on unknown markers
+    "--strict-config",        # Raise error on config issues
+    "--cov=app",              # Coverage for app package
+    "--cov=agents",           # Coverage for agents package
+    "--cov=models",           # Coverage for models package
+    "--cov-report=term-missing", # Show missing lines in coverage
+    "--cov-report=html",      # Generate HTML coverage report
+    "--cov-report=xml",       # Generate XML coverage report
+    "--cov-fail-under=80",    # Fail if coverage is below 80%
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "security: marks tests as security tests",
+]
+asyncio_mode = "auto"
+timeout = 300  # 5 minute timeout for tests
+
+# Coverage configuration
+[tool.coverage.run]
+branch = true
+source = ["app", "agents", "models"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@overload",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# Bandit configuration
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+    ".venv",
+    "venv",
+]
+skips = [
+    "B101",  # Allow assert statements (used in tests)
+]
+
+# Additional tool configurations can be added here as needed

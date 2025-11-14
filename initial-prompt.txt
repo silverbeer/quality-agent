@@ -1,0 +1,81 @@
+I'm building a webhook receiver service that uses CrewAI agents to analyze GitHub PR changes for test coverage gaps and intelligent test planning. This will run locally in k3s and use ngrok for GitHub webhook connectivity.
+
+PROJECT SETUP:
+- Modern Python with FastAPI and Pydantic models
+- CrewAI for agent orchestration with agents passing Pydantic models between them
+- GitHub webhook receiver with signature verification
+- Agents should analyze code changes from PRs to: (1) identify test coverage gaps, (2) create intelligent test execution plans
+- Output: Generate analysis reports (POC phase)
+
+TARGET APPLICATION CONTEXT:
+The target repo being analyzed is "missing-table" - a youth soccer league management web app with:
+- Vue.js frontend
+- FastAPI backend  
+- Supabase database
+- Runs in GCP GKE Autopilot (prod) and k3s (local)
+
+STEP-BY-STEP IMPLEMENTATION:
+
+1. Initialize the project structure:
+   - Set up modern Python project with uv and pyproject.toml
+   - Create project structure: app/, agents/, models/, tests/
+   - Add .gitignore for Python
+
+2. Create Pydantic models (models.py):
+   - GitHubWebhookPayload - for PR events
+   - CodeChange - representing file changes
+   - TestCoverageGap - identified coverage gaps
+   - TestExecutionPlan - recommended tests to run
+   - AnalysisReport - final output
+
+3. Build FastAPI webhook receiver (app/webhook_receiver.py):
+   - POST endpoint at /webhook/github
+   - GitHub signature verification (HMAC SHA256)
+   - Parse PR opened/synchronize/closed events  
+   - Extract code changes from PR
+   - Trigger CrewAI agents
+   - Return 200 OK immediately (async processing)
+
+4. Create CrewAI agents (agents/):
+   - CodeAnalyzerAgent: Analyzes git diff, identifies changed files/functions
+   - TestCoverageAgent: Identifies what tests exist and what's missing based on changes
+   - TestPlannerAgent: Creates intelligent test execution plan
+   - Configure agents to pass Pydantic models between them
+
+5. Add deployment configs:
+   - Dockerfile (multi-stage build)
+   - docker-compose.yml for local development
+   - k3s deployment manifests (deployment.yaml, service.yaml)
+   - Environment variables template (.env.example)
+
+6. Create README.md with:
+   - Project overview
+   - Setup instructions
+   - ngrok configuration for GitHub webhooks
+   - How to configure GitHub webhook in repo settings
+   - Local k3s deployment steps
+
+7. Add basic observability:
+   - Structured logging
+   - Health check endpoint
+   - Metrics endpoint (optional for POC)
+
+DEPENDENCIES TO INCLUDE:
+- fastapi
+- uvicorn
+- pydantic
+- crewai
+- crewai-tools
+- python-dotenv
+- httpx (for API calls)
+- PyGithub (for GitHub API interactions)
+
+CONFIGURATION NEEDED:
+- GITHUB_WEBHOOK_SECRET
+- GITHUB_TOKEN (for API access)
+- ANTHROPIC_API_KEY (for CrewAI agents using Claude)
+- PORT (default 8000)
+
+Please create this project structure and implement all components. Make it production-ready but start with a working POC. Add comments explaining key decisions, especially around agent orchestration and webhook security.
+
+BOOM! Let's build this! 🚀
