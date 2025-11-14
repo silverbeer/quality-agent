@@ -257,8 +257,9 @@ class TestWebhookEndpoint:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "accepted"
+        assert data["status"] == "processing"  # Background analysis
         assert data["pr_number"] == 123
+        assert data["delivery_id"] == "12345-67890"
 
     def test_webhook_endpoint_rejects_invalid_signature(
         self, client: TestClient, valid_pr_payload: dict
@@ -424,8 +425,10 @@ class TestWebhookEndpoint:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "accepted"
+        assert data["status"] == "processing"  # Background analysis
         assert data["action"] == "synchronize"
+        assert data["pr_number"] == 123
+        assert data["delivery_id"] == "12345-67890"
 
     def test_webhook_endpoint_rejects_invalid_json(
         self, client: TestClient

@@ -10,7 +10,7 @@ This module initializes the FastAPI application with:
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Header, Request
+from fastapi import BackgroundTasks, FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -146,6 +146,7 @@ async def root() -> dict[str, str]:
 @app.post("/webhook/github")
 async def github_webhook_endpoint(
     request: Request,
+    background_tasks: BackgroundTasks,
     x_hub_signature_256: str = Header(..., alias="X-Hub-Signature-256"),
     x_github_event: str = Header(..., alias="X-GitHub-Event"),
     x_github_delivery: str = Header(..., alias="X-GitHub-Delivery"),
@@ -173,5 +174,5 @@ async def github_webhook_endpoint(
         See docs/guides/github-webhook-setup.md for configuration.
     """
     return await handle_github_webhook(
-        request, x_hub_signature_256, x_github_event, x_github_delivery
+        request, background_tasks, x_hub_signature_256, x_github_event, x_github_delivery
     )
