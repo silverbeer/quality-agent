@@ -44,34 +44,49 @@ echo "✅ Main branch found on GitHub"
 echo ""
 echo "⚙️  Configuring branch protection rules..."
 
-# Set up branch protection
+# Set up branch protection using JSON input
+# Note: For personal repos, enforce_admins=false allows repo owner to bypass if needed
 gh api \
   --method PUT \
   -H "Accept: application/vnd.github+json" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
   /repos/$REPO_OWNER/$REPO_NAME/branches/main/protection \
-  -f required_status_checks='{"strict":true,"contexts":[]}' \
-  -f enforce_admins=false \
-  -f required_pull_request_reviews='{"dismiss_stale_reviews":false,"require_code_owner_reviews":false,"required_approving_review_count":1,"require_last_push_approval":false,"bypass_pull_request_allowances":{"users":["'$REPO_OWNER'"]}}' \
-  -f restrictions=null \
-  -f required_linear_history=true \
-  -f allow_force_pushes=false \
-  -f allow_deletions=false \
-  -f block_creations=false \
-  -f required_conversation_resolution=true \
-  -f lock_branch=false \
-  -f allow_fork_syncing=true \
-  > /dev/null
+  --input - <<EOF
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": []
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1,
+    "require_last_push_approval": false
+  },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "block_creations": false,
+  "required_conversation_resolution": true,
+  "lock_branch": false,
+  "allow_fork_syncing": true
+}
+EOF
 
 echo "✅ Branch protection configured!"
 echo ""
 echo "📋 Protection rules applied:"
 echo "   ✅ Pull requests required (1 approval)"
-echo "   ✅ You can bypass PR requirement (solo dev)"
+echo "   ✅ Admins (you) can bypass if needed for emergencies"
 echo "   ✅ Status checks required (when configured)"
 echo "   ✅ Conversation resolution required"
-echo "   ✅ Linear history enforced"
+echo "   ✅ Linear history enforced (squash/rebase only)"
 echo "   ✅ Force pushes blocked"
+echo ""
+echo "💡 Note: As repo owner, you CAN approve your own PRs!"
+echo "   GitHub allows this for personal repositories."
 echo ""
 echo "🎉 Main branch is now protected!"
 echo ""

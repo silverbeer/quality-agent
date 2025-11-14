@@ -131,25 +131,33 @@ kubectl logs -f deployment/quality-agent
 
 ### Setting Up GitHub Webhooks
 
-1. **Expose your local service with ngrok**:
+Quality Agent receives webhooks from GitHub when PRs are created, updated, or closed.
+
+**Quick Setup:**
+
+1. **Generate webhook secret**:
+   ```bash
+   python3 -c "import secrets; print(secrets.token_hex(32))"
+   # Add to .env: GITHUB_WEBHOOK_SECRET=<generated-secret>
+   ```
+
+2. **Start ngrok** (local dev):
    ```bash
    ngrok http 8000
+   # Copy the HTTPS URL (e.g., https://abc123.ngrok-free.app)
    ```
-   Note the HTTPS URL provided (e.g., `https://abc123.ngrok.io`)
 
-2. **Configure webhook in GitHub**:
-   - Go to your repository settings
-   - Navigate to **Settings → Webhooks → Add webhook**
-   - **Payload URL**: `https://abc123.ngrok.io/webhook/github`
+3. **Configure webhook on GitHub**:
+   - Go to repository **Settings → Webhooks → Add webhook**
+   - **Payload URL**: `https://abc123.ngrok-free.app/webhook/github`
    - **Content type**: `application/json`
-   - **Secret**: Same value as `GITHUB_WEBHOOK_SECRET` in your `.env`
-   - **Events**: Select "Pull requests"
+   - **Secret**: Paste the generated secret
+   - **Events**: Select "Pull requests" only
    - Click **Add webhook**
 
-3. **Test the webhook**:
-   - Open or update a pull request in your repository
-   - Check the webhook delivery in GitHub settings
-   - View logs in your Quality Agent service
+4. **Verify**: Check "Recent Deliveries" shows green checkmark
+
+**Complete guide**: See [GitHub Webhook Setup](./docs/guides/github-webhook-setup.md) for detailed instructions, troubleshooting, and production setup.
 
 ## Architecture
 
