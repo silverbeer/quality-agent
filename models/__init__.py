@@ -19,6 +19,12 @@ from models.github import (
     PushWebhookPayload,
     WebhookDeliveryInfo,
 )
+from models.metrics import (
+    DeploymentMetrics,
+    DORAMetricsSnapshot,
+    MetricsHealth,
+    PRMetrics,
+)
 
 
 __version__ = "0.1.0"
@@ -41,4 +47,9 @@ __all__ = [
     "TestCoverageGap",
     "TestExecutionPlan",
     "TestRecommendation",
+    # Metrics models
+    "DeploymentMetrics",
+    "DORAMetricsSnapshot",
+    "MetricsHealth",
+    "PRMetrics",
 ]

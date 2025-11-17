@@ -19,6 +19,7 @@ from fastapi import BackgroundTasks, HTTPException, Request, status
 
 from agents import analyze_pull_request
 from app.config import settings
+from app.metrics import record_deployment, record_pr_event, record_pr_review_time
 from app.webhook_audit import log_webhook
 from models.github import PullRequestWebhookPayload, PushWebhookPayload, WebhookDeliveryInfo
 
@@ -180,6 +181,28 @@ async def process_pull_request_webhook(
         delivery_id=delivery_info.delivery_id,
     )
 
+    # Record PR metrics (DORA)
+    if settings.enable_metrics:
+        record_pr_event(
+            repository=payload.repo_full_name,
+            action=payload.action,
+            merged=payload.is_merged,
+        )
+
+        # Record PR review time if merged
+        if payload.is_merged and payload.pull_request.merged_at:
+            review_time_seconds = (
+                payload.pull_request.merged_at - payload.pull_request.created_at
+            ).total_seconds()
+            record_pr_review_time(payload.repo_full_name, review_time_seconds)
+
+            logger.info(
+                "pr_review_time_recorded",
+                pr_number=payload.number,
+                review_time_seconds=review_time_seconds,
+                review_time_hours=round(review_time_seconds / 3600, 2),
+            )
+
     # Check if this event requires analysis
     if not payload.is_actionable:
         logger.info(
@@ -282,6 +305,30 @@ async def process_push_webhook(
         commit_count=payload.commit_count,
         compare_url=str(payload.compare),
     )
+
+    # Record deployment metrics (DORA) - use push-to-main as deployment proxy
+    if settings.enable_metrics:
+        # Detect main/master branch pushes as production deployments
+        is_main_branch = payload.branch_name in ("main", "master")
+
+        if is_main_branch:
+            # Record as production deployment
+            # For now, we assume all pushes to main succeed
+            # Future: integrate with deployment webhooks for actual status
+            record_deployment(
+                repository=payload.repo_full_name,
+                environment="production",
+                success=True,
+            )
+
+            logger.info(
+                "deployment_recorded",
+                branch=payload.branch_name,
+                commits=payload.commit_count,
+                environment="production",
+                status="success",
+                note="Using push-to-main as deployment proxy",
+            )
 
     # Phase 3: This is where we'll trigger analysis
     # For now, just log and return acceptance

@@ -87,6 +87,17 @@ class Settings(BaseSettings):
         description="Number of days to retain webhook audit logs"
     )
 
+    # Metrics Configuration
+    enable_metrics: bool = Field(
+        default=False,
+        description="Enable Prometheus metrics endpoint at /metrics"
+    )
+
+    metrics_include_default: bool = Field(
+        default=True,
+        description="Include default HTTP metrics (request count, duration, etc.)"
+    )
+
     # Agent Configuration (optional, with defaults)
     agent_timeout: int = Field(
         default=300,

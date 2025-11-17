@@ -1,0 +1,24 @@
+# Prometheus configuration for Docker Compose
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'docker-compose'
+    environment: 'development'
+
+scrape_configs:
+  # Quality Agent metrics
+  - job_name: 'quality-agent'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['quality-agent:8000']
+        labels:
+          service: 'quality-agent'
+          app: 'quality-agent'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

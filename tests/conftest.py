@@ -21,6 +21,7 @@ os.environ.update({
     "ENVIRONMENT": "development",
     "LOG_LEVEL": "DEBUG",
     "DEBUG": "true",
+    "ENABLE_METRICS": "true",
 })
 
 
@@ -46,6 +47,7 @@ def test_environment() -> Generator[None]:
         "ENVIRONMENT": "development",
         "LOG_LEVEL": "DEBUG",
         "DEBUG": "true",
+        "ENABLE_METRICS": "true",
     })
 
     yield
