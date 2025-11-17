@@ -14,46 +14,159 @@ import pytest
 from app.config import settings
 
 
+def _build_user(login: str, user_id: int) -> dict:
+    """Build complete GitHub user object with all required fields."""
+    return {
+        "login": login,
+        "id": user_id,
+        "node_id": f"U_kgDO{user_id}",
+        "avatar_url": f"https://avatars.githubusercontent.com/u/{user_id}?v=4",
+        "gravatar_id": "",
+        "url": f"https://api.github.com/users/{login}",
+        "html_url": f"https://github.com/{login}",
+        "followers_url": f"https://api.github.com/users/{login}/followers",
+        "following_url": f"https://api.github.com/users/{login}/following{{/other_user}}",
+        "gists_url": f"https://api.github.com/users/{login}/gists{{/gist_id}}",
+        "starred_url": f"https://api.github.com/users/{login}/starred{{/owner}}{{/repo}}",
+        "subscriptions_url": f"https://api.github.com/users/{login}/subscriptions",
+        "organizations_url": f"https://api.github.com/users/{login}/orgs",
+        "repos_url": f"https://api.github.com/users/{login}/repos",
+        "events_url": f"https://api.github.com/users/{login}/events{{/privacy}}",
+        "received_events_url": f"https://api.github.com/users/{login}/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": False,
+    }
+
+
+def _build_repo(
+    repo_id: int,
+    owner_login: str,
+    owner_id: int,
+    repo_name: str,
+    description: str,
+    default_branch: str = "main",
+) -> dict:
+    """Build complete GitHub repository object with all required fields."""
+    full_name = f"{owner_login}/{repo_name}"
+    owner = _build_user(owner_login, owner_id)
+
+    return {
+        "id": repo_id,
+        "node_id": f"R_kgDO{repo_id}",
+        "name": repo_name,
+        "full_name": full_name,
+        "private": False,
+        "owner": owner,
+        "html_url": f"https://github.com/{full_name}",
+        "description": description,
+        "fork": False,
+        "url": f"https://api.github.com/repos/{full_name}",
+        "forks_url": f"https://api.github.com/repos/{full_name}/forks",
+        "keys_url": f"https://api.github.com/repos/{full_name}/keys{{/key_id}}",
+        "collaborators_url": f"https://api.github.com/repos/{full_name}/collaborators{{/collaborator}}",
+        "teams_url": f"https://api.github.com/repos/{full_name}/teams",
+        "hooks_url": f"https://api.github.com/repos/{full_name}/hooks",
+        "issue_events_url": f"https://api.github.com/repos/{full_name}/issues/events{{/number}}",
+        "events_url": f"https://api.github.com/repos/{full_name}/events",
+        "assignees_url": f"https://api.github.com/repos/{full_name}/assignees{{/user}}",
+        "branches_url": f"https://api.github.com/repos/{full_name}/branches{{/branch}}",
+        "tags_url": f"https://api.github.com/repos/{full_name}/tags",
+        "blobs_url": f"https://api.github.com/repos/{full_name}/git/blobs{{/sha}}",
+        "git_tags_url": f"https://api.github.com/repos/{full_name}/git/tags{{/sha}}",
+        "git_refs_url": f"https://api.github.com/repos/{full_name}/git/refs{{/sha}}",
+        "trees_url": f"https://api.github.com/repos/{full_name}/git/trees{{/sha}}",
+        "statuses_url": f"https://api.github.com/repos/{full_name}/statuses/{{sha}}",
+        "languages_url": f"https://api.github.com/repos/{full_name}/languages",
+        "stargazers_url": f"https://api.github.com/repos/{full_name}/stargazers",
+        "contributors_url": f"https://api.github.com/repos/{full_name}/contributors",
+        "subscribers_url": f"https://api.github.com/repos/{full_name}/subscribers",
+        "subscription_url": f"https://api.github.com/repos/{full_name}/subscription",
+        "commits_url": f"https://api.github.com/repos/{full_name}/commits{{/sha}}",
+        "git_commits_url": f"https://api.github.com/repos/{full_name}/git/commits{{/sha}}",
+        "comments_url": f"https://api.github.com/repos/{full_name}/comments{{/number}}",
+        "issue_comment_url": f"https://api.github.com/repos/{full_name}/issues/comments{{/number}}",
+        "contents_url": f"https://api.github.com/repos/{full_name}/contents/{{+path}}",
+        "compare_url": f"https://api.github.com/repos/{full_name}/compare/{{base}}...{{head}}",
+        "merges_url": f"https://api.github.com/repos/{full_name}/merges",
+        "archive_url": f"https://api.github.com/repos/{full_name}/{{archive_format}}{{/ref}}",
+        "downloads_url": f"https://api.github.com/repos/{full_name}/downloads",
+        "issues_url": f"https://api.github.com/repos/{full_name}/issues{{/number}}",
+        "pulls_url": f"https://api.github.com/repos/{full_name}/pulls{{/number}}",
+        "milestones_url": f"https://api.github.com/repos/{full_name}/milestones{{/number}}",
+        "notifications_url": f"https://api.github.com/repos/{full_name}/notifications{{?since,all,participating}}",
+        "labels_url": f"https://api.github.com/repos/{full_name}/labels{{/name}}",
+        "releases_url": f"https://api.github.com/repos/{full_name}/releases{{/id}}",
+        "deployments_url": f"https://api.github.com/repos/{full_name}/deployments",
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-15T00:00:00Z",
+        "pushed_at": "2025-01-15T10:00:00Z",
+        "git_url": f"git://github.com/{full_name}.git",
+        "ssh_url": f"git@github.com:{full_name}.git",
+        "clone_url": f"https://github.com/{full_name}.git",
+        "svn_url": f"https://github.com/{full_name}",
+        "homepage": None,
+        "size": 1337,
+        "stargazers_count": 0,
+        "watchers_count": 0,
+        "language": "Python",
+        "has_issues": True,
+        "has_projects": True,
+        "has_downloads": True,
+        "has_wiki": True,
+        "has_pages": False,
+        "has_discussions": False,
+        "forks_count": 0,
+        "mirror_url": None,
+        "archived": False,
+        "disabled": False,
+        "open_issues_count": 1,
+        "license": None,
+        "allow_forking": True,
+        "is_template": False,
+        "web_commit_signoff_required": False,
+        "topics": [],
+        "visibility": "public",
+        "forks": 0,
+        "open_issues": 1,
+        "watchers": 0,
+        "default_branch": default_branch,
+        "allow_squash_merge": True,
+        "allow_merge_commit": True,
+        "allow_rebase_merge": True,
+        "allow_auto_merge": False,
+        "delete_branch_on_merge": False,
+        "allow_update_branch": False,
+        "use_squash_pr_title_as_default": False,
+        "squash_merge_commit_message": "COMMIT_MESSAGES",
+        "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+        "merge_commit_message": "PR_TITLE",
+        "merge_commit_title": "MERGE_MESSAGE",
+    }
+
+
 @pytest.fixture
 def e2e_skynet_repo():
     """Obviously fake AI project repository."""
-    return {
-        "id": 123456789,
-        "name": "definitely-not-skynet",
-        "full_name": "octocat/definitely-not-skynet",
-        "owner": {
-            "login": "octocat",
-            "id": 1,
-            "avatar_url": "https://avatars.githubusercontent.com/u/1?v=4",
-            "type": "User",
-        },
-        "private": False,
-        "html_url": "https://github.com/octocat/definitely-not-skynet",
-        "description": "Totally harmless AI project. Nothing to see here.",
-        "fork": False,
-        "default_branch": "main",
-    }
+    return _build_repo(
+        repo_id=123456789,
+        owner_login="octocat",
+        owner_id=1,
+        repo_name="definitely-not-skynet",
+        description="Totally harmless AI project. Nothing to see here.",
+    )
 
 
 @pytest.fixture
 def e2e_works_on_my_machine_repo():
     """Classic developer excuse repository."""
-    return {
-        "id": 987654321,
-        "name": "works-on-my-machine",
-        "full_name": "senior-dev/works-on-my-machine",
-        "owner": {
-            "login": "senior-dev",
-            "id": 42,
-            "avatar_url": "https://avatars.githubusercontent.com/u/42?v=4",
-            "type": "User",
-        },
-        "private": False,
-        "html_url": "https://github.com/senior-dev/works-on-my-machine",
-        "description": "¯\\_(ツ)_/¯",
-        "fork": False,
-        "default_branch": "main",
-    }
+    return _build_repo(
+        repo_id=987654321,
+        owner_login="senior-dev",
+        owner_id=42,
+        repo_name="works-on-my-machine",
+        description="¯\\_(ツ)_/¯",
+    )
 
 
 @pytest.fixture
@@ -67,53 +180,97 @@ def e2e_pr_opened_payload(e2e_skynet_repo):
     created_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
     updated_at = datetime(2025, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
 
+    full_name = e2e_skynet_repo["full_name"]
+    pr_number = 42
+    head_sha = "a" * 40
+    base_sha = "b" * 40
+
+    # Build users
+    pr_author = _build_user("senior-dev", 42)
+    repo_owner = _build_user("octocat", 1)
+
     return {
         "action": "opened",
-        "number": 42,
+        "number": pr_number,
         "pull_request": {
+            "url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
             "id": 111111111,
-            "number": 42,
+            "node_id": "PR_kwDO111111",
+            "html_url": f"https://github.com/{full_name}/pull/{pr_number}",
+            "diff_url": f"https://github.com/{full_name}/pull/{pr_number}.diff",
+            "patch_url": f"https://github.com/{full_name}/pull/{pr_number}.patch",
+            "issue_url": f"https://api.github.com/repos/{full_name}/issues/{pr_number}",
+            "number": pr_number,
             "state": "open",
             "locked": False,
             "title": "Add AI sentience (totally safe)",
-            "user": {
-                "login": "senior-dev",
-                "id": 42,
-                "type": "User",
-            },
+            "user": pr_author,
             "body": "## Summary\n\nAdding self-awareness to the AI. What could possibly go wrong?\n\n## Checklist\n- [x] Code compiles\n- [ ] Tests (TODO: write these someday)\n- [ ] Documentation (lol)\n\nYOLO 🚀",
             "created_at": created_at.isoformat(),
             "updated_at": updated_at.isoformat(),
             "closed_at": None,
             "merged_at": None,
             "merge_commit_sha": None,
+            "assignee": None,
+            "assignees": [],
+            "requested_reviewers": [],
+            "requested_teams": [],
+            "labels": [],
+            "milestone": None,
+            "draft": False,
+            "commits_url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/commits",
+            "review_comments_url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/comments",
+            "review_comment_url": f"https://api.github.com/repos/{full_name}/pulls/comments{{/number}}",
+            "comments_url": f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments",
+            "statuses_url": f"https://api.github.com/repos/{full_name}/statuses/{head_sha}",
             "head": {
                 "label": "senior-dev:feature/add-sentience",
                 "ref": "feature/add-sentience",
-                "sha": "a" * 40,
-                "user": {"login": "senior-dev"},
+                "sha": head_sha,
+                "user": pr_author,
+                "repo": _build_repo(
+                    repo_id=987654321,
+                    owner_login="senior-dev",
+                    owner_id=42,
+                    repo_name="definitely-not-skynet",
+                    description="Fork of skynet for testing",
+                ),
             },
             "base": {
                 "label": "octocat:main",
                 "ref": "main",
-                "sha": "b" * 40,
-                "user": {"login": "octocat"},
+                "sha": base_sha,
+                "user": repo_owner,
+                "repo": e2e_skynet_repo,
             },
+            "_links": {
+                "self": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}"},
+                "html": {"href": f"https://github.com/{full_name}/pull/{pr_number}"},
+                "issue": {"href": f"https://api.github.com/repos/{full_name}/issues/{pr_number}"},
+                "comments": {"href": f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments"},
+                "review_comments": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/comments"},
+                "review_comment": {"href": f"https://api.github.com/repos/{full_name}/pulls/comments{{/number}}"},
+                "commits": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/commits"},
+                "statuses": {"href": f"https://api.github.com/repos/{full_name}/statuses/{head_sha}"},
+            },
+            "author_association": "CONTRIBUTOR",
+            "auto_merge": None,
+            "active_lock_reason": None,
             "merged": False,
             "mergeable": True,
+            "rebaseable": None,
             "mergeable_state": "clean",
-            "draft": False,
+            "merged_by": None,
+            "comments": 0,
+            "review_comments": 0,
+            "maintainer_can_modify": False,
             "commits": 3,
             "additions": 750,
             "deletions": 200,
             "changed_files": 3,
         },
         "repository": e2e_skynet_repo,
-        "sender": {
-            "login": "senior-dev",
-            "id": 42,
-            "type": "User",
-        },
+        "sender": pr_author,
     }
 
 
@@ -127,55 +284,100 @@ def e2e_pr_synchronized_payload(e2e_works_on_my_machine_repo):
     created_at = datetime(2025, 1, 14, 10, 0, 0, tzinfo=timezone.utc)
     updated_at = datetime(2025, 1, 15, 11, 0, 0, tzinfo=timezone.utc)
 
+    full_name = e2e_works_on_my_machine_repo["full_name"]
+    pr_number = 99
+    before_sha = "c" * 40
+    after_sha = "d" * 40
+    base_sha = "e" * 40
+
+    # Build users
+    intern = _build_user("intern", 999)
+    senior_dev = _build_user("senior-dev", 42)
+
     return {
         "action": "synchronize",
-        "number": 99,
-        "before": "c" * 40,
-        "after": "d" * 40,
+        "number": pr_number,
+        "before": before_sha,
+        "after": after_sha,
         "pull_request": {
+            "url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
             "id": 222222222,
-            "number": 99,
+            "node_id": "PR_kwDO222222",
+            "html_url": f"https://github.com/{full_name}/pull/{pr_number}",
+            "diff_url": f"https://github.com/{full_name}/pull/{pr_number}.diff",
+            "patch_url": f"https://github.com/{full_name}/pull/{pr_number}.patch",
+            "issue_url": f"https://api.github.com/repos/{full_name}/issues/{pr_number}",
+            "number": pr_number,
             "state": "open",
             "locked": False,
             "title": "Fix production bug (probably introduce 3 more)",
-            "user": {
-                "login": "intern",
-                "id": 999,
-                "type": "User",
-            },
+            "user": intern,
             "body": "Hotfix for prod. Tested on my machine. Deploy on Friday?",
             "created_at": created_at.isoformat(),
             "updated_at": updated_at.isoformat(),
             "closed_at": None,
             "merged_at": None,
             "merge_commit_sha": None,
+            "assignee": None,
+            "assignees": [],
+            "requested_reviewers": [],
+            "requested_teams": [],
+            "labels": [],
+            "milestone": None,
+            "draft": False,
+            "commits_url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/commits",
+            "review_comments_url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/comments",
+            "review_comment_url": f"https://api.github.com/repos/{full_name}/pulls/comments{{/number}}",
+            "comments_url": f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments",
+            "statuses_url": f"https://api.github.com/repos/{full_name}/statuses/{after_sha}",
             "head": {
                 "label": "intern:hotfix/friday-deploy",
                 "ref": "hotfix/friday-deploy",
-                "sha": "d" * 40,
-                "user": {"login": "intern"},
+                "sha": after_sha,
+                "user": intern,
+                "repo": _build_repo(
+                    repo_id=888888888,
+                    owner_login="intern",
+                    owner_id=999,
+                    repo_name="works-on-my-machine",
+                    description="Intern's fork (YOLO commits)",
+                ),
             },
             "base": {
                 "label": "senior-dev:main",
                 "ref": "main",
-                "sha": "e" * 40,
-                "user": {"login": "senior-dev"},
+                "sha": base_sha,
+                "user": senior_dev,
+                "repo": e2e_works_on_my_machine_repo,
             },
+            "_links": {
+                "self": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}"},
+                "html": {"href": f"https://github.com/{full_name}/pull/{pr_number}"},
+                "issue": {"href": f"https://api.github.com/repos/{full_name}/issues/{pr_number}"},
+                "comments": {"href": f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments"},
+                "review_comments": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/comments"},
+                "review_comment": {"href": f"https://api.github.com/repos/{full_name}/pulls/comments{{/number}}"},
+                "commits": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/commits"},
+                "statuses": {"href": f"https://api.github.com/repos/{full_name}/statuses/{after_sha}"},
+            },
+            "author_association": "CONTRIBUTOR",
+            "auto_merge": None,
+            "active_lock_reason": None,
             "merged": False,
             "mergeable": True,
+            "rebaseable": None,
             "mergeable_state": "unstable",
-            "draft": False,
+            "merged_by": None,
+            "comments": 0,
+            "review_comments": 0,
+            "maintainer_can_modify": False,
             "commits": 5,
             "additions": 150,
             "deletions": 50,
             "changed_files": 2,
         },
         "repository": e2e_works_on_my_machine_repo,
-        "sender": {
-            "login": "intern",
-            "id": 999,
-            "type": "User",
-        },
+        "sender": intern,
     }
 
 
@@ -190,58 +392,98 @@ def e2e_pr_merged_payload(e2e_skynet_repo):
     updated_at = datetime(2025, 1, 15, 12, 30, 0, tzinfo=timezone.utc)
     merged_at = datetime(2025, 1, 15, 12, 30, 0, tzinfo=timezone.utc)
 
+    full_name = e2e_skynet_repo["full_name"]
+    pr_number = 42
+    head_sha = "a" * 40
+    base_sha = "b" * 40
+    merge_sha = "f" * 40
+
+    # Build users
+    pr_author = _build_user("senior-dev", 42)
+    repo_owner = _build_user("octocat", 1)
+
     return {
         "action": "closed",
-        "number": 42,
+        "number": pr_number,
         "pull_request": {
+            "url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
             "id": 111111111,
-            "number": 42,
+            "node_id": "PR_kwDO111111",
+            "html_url": f"https://github.com/{full_name}/pull/{pr_number}",
+            "diff_url": f"https://github.com/{full_name}/pull/{pr_number}.diff",
+            "patch_url": f"https://github.com/{full_name}/pull/{pr_number}.patch",
+            "issue_url": f"https://api.github.com/repos/{full_name}/issues/{pr_number}",
+            "number": pr_number,
             "state": "closed",
             "locked": False,
             "title": "Add AI sentience (totally safe)",
-            "user": {
-                "login": "senior-dev",
-                "id": 42,
-                "type": "User",
-            },
+            "user": pr_author,
             "body": "## Summary\n\nAdding self-awareness to the AI. What could possibly go wrong?\n\nYOLO 🚀",
             "created_at": created_at.isoformat(),
             "updated_at": updated_at.isoformat(),
             "closed_at": merged_at.isoformat(),
             "merged_at": merged_at.isoformat(),
-            "merge_commit_sha": "f" * 40,
+            "merge_commit_sha": merge_sha,
+            "assignee": None,
+            "assignees": [],
+            "requested_reviewers": [],
+            "requested_teams": [],
+            "labels": [],
+            "milestone": None,
+            "draft": False,
+            "commits_url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/commits",
+            "review_comments_url": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/comments",
+            "review_comment_url": f"https://api.github.com/repos/{full_name}/pulls/comments{{/number}}",
+            "comments_url": f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments",
+            "statuses_url": f"https://api.github.com/repos/{full_name}/statuses/{head_sha}",
             "head": {
                 "label": "senior-dev:feature/add-sentience",
                 "ref": "feature/add-sentience",
-                "sha": "a" * 40,
-                "user": {"login": "senior-dev"},
+                "sha": head_sha,
+                "user": pr_author,
+                "repo": _build_repo(
+                    repo_id=987654321,
+                    owner_login="senior-dev",
+                    owner_id=42,
+                    repo_name="definitely-not-skynet",
+                    description="Fork of skynet for testing",
+                ),
             },
             "base": {
                 "label": "octocat:main",
                 "ref": "main",
-                "sha": "b" * 40,
-                "user": {"login": "octocat"},
+                "sha": base_sha,
+                "user": repo_owner,
+                "repo": e2e_skynet_repo,
             },
+            "_links": {
+                "self": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}"},
+                "html": {"href": f"https://github.com/{full_name}/pull/{pr_number}"},
+                "issue": {"href": f"https://api.github.com/repos/{full_name}/issues/{pr_number}"},
+                "comments": {"href": f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments"},
+                "review_comments": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/comments"},
+                "review_comment": {"href": f"https://api.github.com/repos/{full_name}/pulls/comments{{/number}}"},
+                "commits": {"href": f"https://api.github.com/repos/{full_name}/pulls/{pr_number}/commits"},
+                "statuses": {"href": f"https://api.github.com/repos/{full_name}/statuses/{head_sha}"},
+            },
+            "author_association": "CONTRIBUTOR",
+            "auto_merge": None,
+            "active_lock_reason": None,
             "merged": True,
-            "merged_by": {
-                "login": "octocat",
-                "id": 1,
-                "type": "User",
-            },
             "mergeable": None,
+            "rebaseable": None,
             "mergeable_state": "unknown",
-            "draft": False,
+            "merged_by": repo_owner,
+            "comments": 0,
+            "review_comments": 0,
+            "maintainer_can_modify": False,
             "commits": 3,
             "additions": 750,
             "deletions": 200,
             "changed_files": 3,
         },
         "repository": e2e_skynet_repo,
-        "sender": {
-            "login": "senior-dev",
-            "id": 42,
-            "type": "User",
-        },
+        "sender": pr_author,
     }
 
 
@@ -251,6 +493,8 @@ def e2e_push_to_main_payload(e2e_works_on_my_machine_repo):
 
     3 commits with developer humor
     """
+    senior_dev = _build_user("senior-dev", 42)
+
     return {
         "ref": "refs/heads/main",
         "before": "1" * 40,
@@ -260,11 +504,7 @@ def e2e_push_to_main_payload(e2e_works_on_my_machine_repo):
             "name": "senior-dev",
             "email": "senior-dev@example.com",
         },
-        "sender": {
-            "login": "senior-dev",
-            "id": 42,
-            "type": "User",
-        },
+        "sender": senior_dev,
         "commits": [
             {
                 "id": "a1b2c3d4" + "0" * 32,
@@ -368,7 +608,7 @@ def e2e_compute_signature():
         Returns:
             str: Signature in format "sha256=<hex_digest>"
         """
-        payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        payload_bytes = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
         signature = hmac.new(
             settings.github_webhook_secret.encode("utf-8"),
             payload_bytes,
