@@ -4,8 +4,8 @@ These tests verify the entire webhook flow from GitHub delivery to processing,
 including signature verification, payload parsing, and response handling.
 """
 
-import hmac
 import hashlib
+import hmac
 import json
 
 import pytest

@@ -7,7 +7,7 @@ Reference: https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_
 """
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -29,7 +29,7 @@ class GitHubRepository(BaseModel):
     name: str = Field(description="Repository name")
     full_name: str = Field(description="Full repository name (owner/repo)")
     html_url: HttpUrl = Field(description="Repository URL")
-    description: Optional[str] = Field(default=None, description="Repository description")
+    description: str | None = Field(default=None, description="Repository description")
     private: bool = Field(description="Whether repository is private")
     owner: GitHubUser = Field(description="Repository owner")
     default_branch: str = Field(description="Default branch name")
@@ -40,7 +40,7 @@ class GitHubRef(BaseModel):
 
     ref: str = Field(description="Branch name")
     sha: str = Field(description="Commit SHA", min_length=40, max_length=40)
-    repo: Optional[GitHubRepository] = Field(default=None, description="Repository info")
+    repo: GitHubRepository | None = Field(default=None, description="Repository info")
     user: GitHubUser = Field(description="User who owns the ref")
     label: str = Field(description="Label for the ref (owner:branch)")
 
@@ -52,20 +52,20 @@ class PullRequest(BaseModel):
     number: int = Field(description="Pull request number")
     state: Literal["open", "closed"] = Field(description="PR state")
     title: str = Field(description="PR title")
-    body: Optional[str] = Field(default=None, description="PR description body")
+    body: str | None = Field(default=None, description="PR description body")
     html_url: HttpUrl = Field(description="PR URL")
     diff_url: HttpUrl = Field(description="Diff URL")
     patch_url: HttpUrl = Field(description="Patch URL")
     created_at: datetime = Field(description="Creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
-    closed_at: Optional[datetime] = Field(default=None, description="Close timestamp")
-    merged_at: Optional[datetime] = Field(default=None, description="Merge timestamp")
-    merge_commit_sha: Optional[str] = Field(default=None, description="Merge commit SHA")
+    closed_at: datetime | None = Field(default=None, description="Close timestamp")
+    merged_at: datetime | None = Field(default=None, description="Merge timestamp")
+    merge_commit_sha: str | None = Field(default=None, description="Merge commit SHA")
     user: GitHubUser = Field(description="PR author")
     head: GitHubRef = Field(description="Head branch (source)")
     base: GitHubRef = Field(description="Base branch (target)")
     merged: bool = Field(description="Whether PR is merged")
-    mergeable: Optional[bool] = Field(default=None, description="Whether PR is mergeable")
+    mergeable: bool | None = Field(default=None, description="Whether PR is mergeable")
     draft: bool = Field(default=False, description="Whether PR is a draft")
     additions: int = Field(ge=0, description="Number of lines added")
     deletions: int = Field(ge=0, description="Number of lines deleted")
@@ -190,7 +190,7 @@ class PushWebhookPayload(BaseModel):
     pusher: dict = Field(description="User who pushed the commits")
     sender: GitHubUser = Field(description="User who triggered the event")
     commits: list[Commit] = Field(description="List of commits in this push")
-    head_commit: Optional[Commit] = Field(default=None, description="Most recent commit")
+    head_commit: Commit | None = Field(default=None, description="Most recent commit")
     compare: HttpUrl = Field(description="URL to compare changes")
 
     @property

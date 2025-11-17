@@ -9,14 +9,14 @@ This agent is responsible for:
 """
 
 import re
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import httpx
-from crewai import Agent, Task
+from crewai import LLM, Agent, Task
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from models.analysis import ChangeType, CodeChange, FileType
+from models.analysis import CodeChange, FileType
 from models.github import PullRequestWebhookPayload
 
 
@@ -332,11 +332,12 @@ class FileClassifierTool(BaseTool):
         }
 
 
-def create_code_analyzer_agent(github_token: str | None = None) -> Agent:
+def create_code_analyzer_agent(github_token: str | None = None, llm: LLM | None = None) -> Agent:
     """Create and configure the CodeAnalyzerAgent.
 
     Args:
         github_token: Optional GitHub token for API access
+        llm: Optional LLM configuration (if not provided, uses default Claude)
 
     Returns:
         Agent: Configured CrewAI agent
@@ -362,6 +363,7 @@ def create_code_analyzer_agent(github_token: str | None = None) -> Agent:
             "and extracting meaningful insights about code modifications."
         ),
         tools=[diff_parser, function_detector, file_classifier],
+        llm=llm,  # Use provided LLM or None to use default from environment
         verbose=True,
         allow_delegation=False,
     )

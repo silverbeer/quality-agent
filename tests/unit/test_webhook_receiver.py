@@ -1,10 +1,8 @@
 """Tests for webhook receiver and signature verification."""
 
-import hmac
 import hashlib
+import hmac
 import json
-from datetime import datetime
-from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient

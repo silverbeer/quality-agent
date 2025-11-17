@@ -1,7 +1,7 @@
 """Tests for configuration management."""
 
 import os
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from pydantic import ValidationError
@@ -10,7 +10,7 @@ from app.config import Settings
 
 
 @pytest.fixture(autouse=True)
-def isolated_environment() -> Generator[None, None, None]:
+def isolated_environment() -> Generator[None]:
     """Isolate environment variables for each test.
 
     This fixture saves the current environment, yields to the test,
@@ -50,7 +50,7 @@ class TestSettings:
         assert settings.port == 8000
         assert settings.log_level == "DEBUG"  # Set in test environment
         assert settings.agent_timeout == 300
-        assert settings.crewai_model == "claude-3-sonnet-20240229"
+        assert settings.crewai_model == "claude-3-5-sonnet-20241022"
         assert settings.crewai_temperature == 0.7
         assert settings.crewai_max_tokens == 4096
 

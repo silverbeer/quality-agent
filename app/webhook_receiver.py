@@ -11,15 +11,17 @@ Security:
 Reference: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
 """
 
-import hmac
 import hashlib
+import hmac
 
-from fastapi import BackgroundTasks, HTTPException, Request, status
 import structlog
+from fastapi import BackgroundTasks, HTTPException, Request, status
 
 from agents import analyze_pull_request
 from app.config import settings
+from app.webhook_audit import log_webhook
 from models.github import PullRequestWebhookPayload, PushWebhookPayload, WebhookDeliveryInfo
+
 
 logger = structlog.get_logger(__name__)
 
@@ -383,6 +385,24 @@ async def handle_github_webhook(
         payload_size=len(payload_body),
     )
 
+    # Audit log the webhook request (for replay and debugging)
+    log_webhook(
+        delivery_id=x_github_delivery,
+        event_type=x_github_event,
+        headers={
+            "X-GitHub-Event": x_github_event,
+            "X-GitHub-Delivery": x_github_delivery,
+            "X-Hub-Signature-256": x_hub_signature_256,
+            "Content-Type": request.headers.get("Content-Type", ""),
+            "User-Agent": request.headers.get("User-Agent", ""),
+        },
+        payload=payload_json,
+        metadata={
+            "payload_size": len(payload_body),
+            "timestamp": delivery_info.received_at.isoformat(),
+        },
+    )
+
     # Route to appropriate handler based on event type
     if x_github_event == "pull_request":
         # Validate payload structure with Pydantic
@@ -402,7 +422,7 @@ async def handle_github_webhook(
 
         return await process_pull_request_webhook(payload, delivery_info, background_tasks)
 
-    elif x_github_event == "push":
+    if x_github_event == "push":
         # Validate payload structure with Pydantic
         try:
             payload = PushWebhookPayload.model_validate(payload_json)
@@ -420,9 +440,8 @@ async def handle_github_webhook(
 
         return await process_push_webhook(payload, delivery_info)
 
-    else:
-        # Should never reach here due to earlier check, but for safety
-        return {
-            "status": "ignored",
-            "message": f"Event type '{x_github_event}' is not handled",
-        }
+    # Should never reach here due to earlier check, but for safety
+    return {
+        "status": "ignored",
+        "message": f"Event type '{x_github_event}' is not handled",
+    }

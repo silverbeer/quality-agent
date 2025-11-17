@@ -7,8 +7,8 @@ This module initializes the FastAPI application with:
 - Exception handling
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import BackgroundTasks, FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +16,9 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.logging_config import configure_logging, get_logger
+from app.webhook_audit import cleanup_old_audit_logs
 from app.webhook_receiver import handle_github_webhook
+
 
 # Configure logging before anything else
 configure_logging()
@@ -24,7 +26,7 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Application lifespan manager.
 
     Handles startup and shutdown events for the application.
@@ -41,7 +43,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         environment=settings.environment,
         port=settings.port,
         log_level=settings.log_level,
+        webhook_audit_enabled=settings.enable_webhook_audit,
     )
+
+    # Cleanup old audit logs on startup
+    if settings.enable_webhook_audit:
+        deleted_count = cleanup_old_audit_logs()
+        if deleted_count > 0:
+            logger.info("audit_logs_cleaned", deleted_count=deleted_count)
 
     yield
 

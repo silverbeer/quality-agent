@@ -13,11 +13,12 @@ import time
 from datetime import datetime
 
 import structlog
-from crewai import Crew, Process
+from crewai import LLM, Crew, Process
 
 from agents.code_analyzer import create_code_analysis_task, create_code_analyzer_agent
 from agents.test_coverage import create_coverage_analysis_task, create_test_coverage_agent
 from agents.test_planner import create_test_planner_agent, create_test_planning_task
+from app.config import settings
 from models.analysis import (
     AnalysisReport,
     ChangeType,
@@ -48,14 +49,25 @@ class QualityAnalysisCrew:
         """
         self.github_token = github_token
 
-        # Create agents
-        self.code_analyzer = create_code_analyzer_agent(github_token)
-        self.coverage_analyzer = create_test_coverage_agent()
-        self.test_planner = create_test_planner_agent()
+        # Create LLM configuration for Claude/Anthropic
+        # This ensures all agents use Claude instead of defaulting to OpenAI
+        self.llm = LLM(
+            model=f"anthropic/{settings.crewai_model}",
+            api_key=settings.anthropic_api_key,
+            temperature=settings.crewai_temperature,
+            max_tokens=settings.crewai_max_tokens,
+        )
+
+        # Create agents with Claude LLM
+        self.code_analyzer = create_code_analyzer_agent(github_token, llm=self.llm)
+        self.coverage_analyzer = create_test_coverage_agent(llm=self.llm)
+        self.test_planner = create_test_planner_agent(llm=self.llm)
 
         logger.info(
             "quality_crew_initialized",
             agents=["CodeAnalyzer", "CoverageAnalyzer", "TestPlanner"],
+            llm_model=settings.crewai_model,
+            llm_provider="anthropic",
         )
 
     def analyze_pull_request(

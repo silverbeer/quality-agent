@@ -10,9 +10,9 @@ This agent is responsible for:
 """
 
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import ClassVar
 
-from crewai import Agent, Task
+from crewai import LLM, Agent, Task
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -344,8 +344,11 @@ class ScenarioIdentifierTool(BaseTool):
         }
 
 
-def create_test_coverage_agent() -> Agent:
+def create_test_coverage_agent(llm: LLM | None = None) -> Agent:
     """Create and configure the TestCoverageAgent.
+
+    Args:
+        llm: Optional LLM configuration (if not provided, uses default Claude)
 
     Returns:
         Agent: Configured CrewAI agent
@@ -372,6 +375,7 @@ def create_test_coverage_agent() -> Agent:
             "and explaining why those gaps matter."
         ),
         tools=[test_finder, coverage_analyzer, risk_assessor, scenario_identifier],
+        llm=llm,  # Use provided LLM or None to use default from environment
         verbose=True,
         allow_delegation=False,
     )

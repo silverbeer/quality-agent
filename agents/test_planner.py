@@ -9,13 +9,13 @@ This agent is responsible for:
 6. Producing a comprehensive TestExecutionPlan
 """
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
-from crewai import Agent, Task
+from crewai import LLM, Agent, Task
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from models.analysis import TestCoverageGap, TestExecutionPlan, TestRecommendation
+from models.analysis import TestCoverageGap, TestExecutionPlan
 
 
 class TestPrioritizerTool(BaseTool):
@@ -327,8 +327,11 @@ class CriticalPathIdentifier(BaseTool):
         }
 
 
-def create_test_planner_agent() -> Agent:
+def create_test_planner_agent(llm: LLM | None = None) -> Agent:
     """Create and configure the TestPlannerAgent.
+
+    Args:
+        llm: Optional LLM configuration (if not provided, uses default Claude)
 
     Returns:
         Agent: Configured CrewAI agent
@@ -355,6 +358,7 @@ def create_test_planner_agent() -> Agent:
             "clear reasoning so developers understand not just what to test, but why."
         ),
         tools=[prioritizer, estimator, recommender, path_identifier],
+        llm=llm,  # Use provided LLM or None to use default from environment
         verbose=True,
         allow_delegation=False,
     )

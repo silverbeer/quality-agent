@@ -69,6 +69,24 @@ class Settings(BaseSettings):
         description="Enable debug mode (verbose logging, detailed errors)"
     )
 
+    # Webhook Audit Logging
+    enable_webhook_audit: bool = Field(
+        default=True,
+        description="Enable audit logging of all webhook requests"
+    )
+
+    webhook_audit_dir: str = Field(
+        default="logs/webhooks",
+        description="Directory to store webhook audit logs"
+    )
+
+    webhook_audit_retention_days: int = Field(
+        default=30,
+        ge=1,
+        le=365,
+        description="Number of days to retain webhook audit logs"
+    )
+
     # Agent Configuration (optional, with defaults)
     agent_timeout: int = Field(
         default=300,
@@ -78,7 +96,7 @@ class Settings(BaseSettings):
     )
 
     crewai_model: str = Field(
-        default="claude-3-sonnet-20240229",
+        default="claude-3-5-sonnet-20241022",
         description="CrewAI model to use for agents"
     )
 
