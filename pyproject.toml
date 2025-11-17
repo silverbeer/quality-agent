@@ -38,6 +38,7 @@ dependencies = [
     "python-json-logger>=2.0.0",
     # Environment management
     "python-dotenv>=1.0.0",
+    "prometheus-fastapi-instrumentator>=7.1.0",
 ]
 
 [project.optional-dependencies]

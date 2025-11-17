@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import BackgroundTasks, FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config import settings
 from app.logging_config import configure_logging, get_logger
@@ -51,6 +52,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         deleted_count = cleanup_old_audit_logs()
         if deleted_count > 0:
             logger.info("audit_logs_cleaned", deleted_count=deleted_count)
+
+    # Enable Prometheus metrics if configured
+    if settings.enable_metrics:
+        instrumentator = Instrumentator(
+            should_group_status_codes=True,
+            should_ignore_untemplated=True,
+            should_respect_env_var=False,
+            should_instrument_requests_inprogress=True,
+            excluded_handlers=["/health", "/metrics"],  # Don't track these endpoints
+            inprogress_name="http_requests_inprogress",
+            inprogress_labels=True,
+        )
+
+        # Instrument the app and expose /metrics endpoint
+        if settings.metrics_include_default:
+            instrumentator.instrument(app).expose(app, endpoint="/metrics")
+        else:
+            # Only expose DORA metrics, skip default HTTP metrics
+            instrumentator.expose(app, endpoint="/metrics")
+
+        logger.info(
+            "metrics_enabled",
+            endpoint="/metrics",
+            include_default=settings.metrics_include_default,
+        )
 
     yield
 
