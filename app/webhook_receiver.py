@@ -11,14 +11,17 @@ Security:
 Reference: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
 """
 
-import hmac
 import hashlib
+import hmac
 
-from fastapi import HTTPException, Request, status
 import structlog
+from fastapi import BackgroundTasks, HTTPException, Request, status
 
+from agents import analyze_pull_request
 from app.config import settings
+from app.webhook_audit import log_webhook
 from models.github import PullRequestWebhookPayload, PushWebhookPayload, WebhookDeliveryInfo
+
 
 logger = structlog.get_logger(__name__)
 
@@ -86,27 +89,86 @@ def verify_github_signature(
     return is_valid
 
 
+async def run_pr_analysis(
+    payload: PullRequestWebhookPayload,
+    delivery_id: str,
+) -> None:
+    """Run PR analysis in background.
+
+    This function runs the CrewAI agent pipeline asynchronously.
+
+    Args:
+        payload: Validated webhook payload
+        delivery_id: Webhook delivery ID for tracking
+    """
+    try:
+        logger.info(
+            "analysis_starting",
+            pr_number=payload.number,
+            repository=payload.repo_full_name,
+            delivery_id=delivery_id,
+        )
+
+        # Run the analysis pipeline
+        report = analyze_pull_request(
+            webhook_payload=payload,
+            github_token=settings.github_token,
+        )
+
+        # Log results
+        logger.info(
+            "analysis_completed",
+            pr_number=payload.number,
+            repository=payload.repo_full_name,
+            status=report.status,
+            code_changes=len(report.code_changes),
+            coverage_gaps=len(report.coverage_gaps),
+            test_recommendations=report.test_plan.total_tests,
+            critical_tests=len(report.test_plan.critical_tests),
+            risk_score=report.risk_score,
+            duration_seconds=report.duration_seconds,
+        )
+
+        # Log summary for easy viewing
+        summary = report.to_summary_dict()
+        logger.info("analysis_summary", **summary)
+
+        # TODO: Phase 4 - Store results in database
+        # TODO: Phase 5 - Post results as PR comment or webhook callback
+
+    except Exception as e:
+        logger.error(
+            "analysis_failed",
+            pr_number=payload.number,
+            repository=payload.repo_full_name,
+            error=str(e),
+            delivery_id=delivery_id,
+        )
+
+
 async def process_pull_request_webhook(
     payload: PullRequestWebhookPayload,
     delivery_info: WebhookDeliveryInfo,
+    background_tasks: BackgroundTasks,
 ) -> dict[str, str | int]:
     """Process a validated pull request webhook.
 
     This function is called after signature verification succeeds.
-    It determines if the PR event requires analysis and (in future phases)
-    triggers the CrewAI agent pipeline.
+    It determines if the PR event requires analysis and triggers
+    the CrewAI agent pipeline in the background.
 
     Args:
         payload: Validated webhook payload
         delivery_info: Webhook delivery metadata
+        background_tasks: FastAPI background tasks for async processing
 
     Returns:
         dict: Response data including status and message
 
     Example:
         ```python
-        response = await process_pull_request_webhook(payload, delivery_info)
-        # {"status": "accepted", "message": "Analysis started", "pr_number": 123}
+        response = await process_pull_request_webhook(payload, delivery_info, bg_tasks)
+        # {"status": "processing", "message": "Analysis started", "pr_number": 123}
         ```
     """
     logger.info(
@@ -146,19 +208,25 @@ async def process_pull_request_webhook(
         deletions=payload.pull_request.deletions,
     )
 
-    # Phase 3: This is where we'll trigger CrewAI agents
-    # For now, just log and return acceptance
+    # Trigger CrewAI analysis in background
+    background_tasks.add_task(
+        run_pr_analysis,
+        payload=payload,
+        delivery_id=delivery_info.delivery_id,
+    )
+
     logger.info(
         "analysis_queued",
         pr_number=payload.number,
-        note="CrewAI integration not yet implemented (Phase 3)",
+        delivery_id=delivery_info.delivery_id,
     )
 
     return {
-        "status": "accepted",
-        "message": "Pull request analysis queued",
+        "status": "processing",
+        "message": "Pull request analysis started",
         "pr_number": payload.number,
         "action": payload.action,
+        "delivery_id": delivery_info.delivery_id,
     }
 
 
@@ -234,6 +302,7 @@ async def process_push_webhook(
 
 async def handle_github_webhook(
     request: Request,
+    background_tasks: BackgroundTasks,
     x_hub_signature_256: str,
     x_github_event: str,
     x_github_delivery: str,
@@ -248,6 +317,7 @@ async def handle_github_webhook(
 
     Args:
         request: FastAPI request object
+        background_tasks: FastAPI background tasks for async processing
         x_hub_signature_256: GitHub signature header
         x_github_event: GitHub event type (e.g., "pull_request")
         x_github_delivery: Unique delivery ID for this webhook
@@ -315,6 +385,24 @@ async def handle_github_webhook(
         payload_size=len(payload_body),
     )
 
+    # Audit log the webhook request (for replay and debugging)
+    log_webhook(
+        delivery_id=x_github_delivery,
+        event_type=x_github_event,
+        headers={
+            "X-GitHub-Event": x_github_event,
+            "X-GitHub-Delivery": x_github_delivery,
+            "X-Hub-Signature-256": x_hub_signature_256,
+            "Content-Type": request.headers.get("Content-Type", ""),
+            "User-Agent": request.headers.get("User-Agent", ""),
+        },
+        payload=payload_json,
+        metadata={
+            "payload_size": len(payload_body),
+            "timestamp": delivery_info.received_at.isoformat(),
+        },
+    )
+
     # Route to appropriate handler based on event type
     if x_github_event == "pull_request":
         # Validate payload structure with Pydantic
@@ -332,9 +420,9 @@ async def handle_github_webhook(
                 detail=f"Invalid payload structure: {str(e)}",
             )
 
-        return await process_pull_request_webhook(payload, delivery_info)
+        return await process_pull_request_webhook(payload, delivery_info, background_tasks)
 
-    elif x_github_event == "push":
+    if x_github_event == "push":
         # Validate payload structure with Pydantic
         try:
             payload = PushWebhookPayload.model_validate(payload_json)
@@ -352,9 +440,8 @@ async def handle_github_webhook(
 
         return await process_push_webhook(payload, delivery_info)
 
-    else:
-        # Should never reach here due to earlier check, but for safety
-        return {
-            "status": "ignored",
-            "message": f"Event type '{x_github_event}' is not handled",
-        }
+    # Should never reach here due to earlier check, but for safety
+    return {
+        "status": "ignored",
+        "message": f"Event type '{x_github_event}' is not handled",
+    }

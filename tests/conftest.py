@@ -5,11 +5,12 @@ Fixtures are automatically discovered by pytest.
 """
 
 import os
-from typing import Generator
+from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+
 
 # Set test environment variables at module import time
 # This ensures they're available before any application code is imported
@@ -24,7 +25,7 @@ os.environ.update({
 
 
 @pytest.fixture(scope="session", autouse=True)
-def test_environment() -> Generator[None, None, None]:
+def test_environment() -> Generator[None]:
     """Set up test environment variables.
 
     This fixture runs once per test session and sets up required environment

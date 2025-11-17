@@ -4,8 +4,8 @@ These tests verify the entire webhook flow from GitHub delivery to processing,
 including signature verification, payload parsing, and response handling.
 """
 
-import hmac
 import hashlib
+import hmac
 import json
 
 import pytest
@@ -224,10 +224,12 @@ class TestWebhookIntegrationFlow:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "accepted"
+        assert data["status"] == "processing"  # Background analysis
         assert data["pr_number"] == 456
         assert data["action"] == "opened"
         assert "message" in data
+        assert data["message"] == "Pull request analysis started"
+        assert data["delivery_id"] == "test-delivery-12345"
 
     def test_full_webhook_flow_pr_synchronized(
         self,
@@ -256,9 +258,11 @@ class TestWebhookIntegrationFlow:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "accepted"
+        assert data["status"] == "processing"  # Background analysis
         assert data["pr_number"] == 456
         assert data["action"] == "synchronize"
+        assert data["message"] == "Pull request analysis started"
+        assert data["delivery_id"] == "test-delivery-67890"
 
     def test_full_webhook_flow_pr_closed_merged(
         self,
@@ -380,8 +384,11 @@ class TestWebhookIntegrationFlow:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        # Draft PRs with "opened" action should still be accepted
-        assert data["status"] == "accepted"
+        # Draft PRs with "opened" action should still be processed
+        assert data["status"] == "processing"
+        assert data["pr_number"] == 456
+        assert data["action"] == "opened"
+        assert data["delivery_id"] == "test-delivery-draft"
 
     def test_full_webhook_flow_ignores_labeled_action(
         self,

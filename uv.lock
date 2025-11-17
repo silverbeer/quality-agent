@@ -76,6 +76,25 @@ wheels = [
 ]
 
 [[package]]
+name = "anthropic"
+version = "0.73.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "docstring-parser" },
+    { name = "httpx" },
+    { name = "jiter" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/07/f550112c3f5299d02f06580577f602e8a112b1988ad7c98ac1a8f7292d7e/anthropic-0.73.0.tar.gz", hash = "sha256:30f0d7d86390165f86af6ca7c3041f8720bb2e1b0e12a44525c8edfdbd2c5239", size = 425168, upload-time = "2025-11-14T18:47:52.635Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/15/b1/5d4d3f649e151e58dc938cf19c4d0cd19fca9a986879f30fea08a7b17138/anthropic-0.73.0-py3-none-any.whl", hash = "sha256:0d56cd8b3ca3fea9c9b5162868bdfd053fbc189b8b56d4290bd2d427b56db769", size = 367839, upload-time = "2025-11-14T18:47:51.195Z" },
+]
+
+[[package]]
 name = "anyio"
 version = "4.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -459,6 +478,11 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0d/e6/141baf7b6fe5fc6949932d31dc912f40a44fadba447cd2b7d0a8c8ba7d26/crewai-1.4.1.tar.gz", hash = "sha256:d69ee0a89a51e2a014e2ff155a51ada8ba29bef1da711edfc4f98c14d596f0fa", size = 3998794, upload-time = "2025-11-07T19:21:12.412Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6f/f1/10dad17418dcd8d8204ec8e7f9818e12a669e00b8dd28f359a838b6b3417/crewai-1.4.1-py3-none-any.whl", hash = "sha256:e1aff382717b3a1279d27754a68cb3c37b5ae9bc74cfba3e96019f96b17b929d", size = 614090, upload-time = "2025-11-07T19:21:10.539Z" },
+]
+
+[package.optional-dependencies]
+anthropic = [
+    { name = "anthropic" },
 ]
 
 [[package]]
@@ -2486,7 +2510,7 @@ name = "quality-agent"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "crewai" },
+    { name = "crewai", extra = ["anthropic"] },
     { name = "crewai-tools" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -2520,7 +2544,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7.5" },
-    { name = "crewai", specifier = ">=0.1.0" },
+    { name = "crewai", extras = ["anthropic"], specifier = ">=0.1.0" },
     { name = "crewai-tools", specifier = ">=0.1.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", specifier = ">=0.25.0" },
