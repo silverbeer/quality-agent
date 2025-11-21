@@ -38,7 +38,19 @@ GitHub Webhooks (PR, push, workflow_run)
 
 ## Initial Setup
 
-### 1. Create Terraform Backend Resources
+### Quick Start (Recommended)
+
+Run the bootstrap script to automate initial setup:
+
+```bash
+./terraform/scripts/bootstrap.sh
+```
+
+This creates the Terraform backend, sets up secrets, and guides you through the remaining steps.
+
+### Manual Setup
+
+#### 1. Create Terraform Backend Resources
 
 Before first deployment, create the S3 bucket and DynamoDB table for Terraform state:
 
