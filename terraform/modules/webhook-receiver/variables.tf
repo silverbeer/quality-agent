@@ -42,15 +42,3 @@ variable "github_webhook_secret_parameter" {
   description = "SSM Parameter Store name for GitHub webhook secret"
   type        = string
 }
-
-variable "lambda_zip_path" {
-  description = "Path to Lambda deployment package"
-  type        = string
-  default     = "../../../dist/webhook_receiver.zip"
-}
-
-variable "lambda_zip_hash" {
-  description = "Base64-encoded SHA256 hash of Lambda package"
-  type        = string
-  default     = ""
-}

@@ -4,6 +4,13 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# Archive for Lambda deployment package
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../../src/lambda/webhook_receiver"
+  output_path = "${path.module}/webhook_receiver.zip"
+}
+
 # IAM Role for Lambda
 resource "aws_iam_role" "lambda" {
   name = "${var.project_name}-webhook-receiver-${var.environment}"
@@ -95,8 +102,8 @@ resource "aws_lambda_function" "webhook_receiver" {
   timeout       = 30
   memory_size   = 256
 
-  filename         = var.lambda_zip_path
-  source_code_hash = var.lambda_zip_hash
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
 
   environment {
     variables = {

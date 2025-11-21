@@ -200,3 +200,9 @@ celerybeat.pid
 
 # Ignore initial-prompt.txt after project is bootstrapped (optional)
 # initial-prompt.txt
+
+# Terraform generated files
+*.zip
+.terraform/
+*.tfstate*
+.terraform.lock.hcl
