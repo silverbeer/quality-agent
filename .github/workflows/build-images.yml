@@ -1,0 +1,125 @@
+name: Build and Push Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'agents/**'
+      - 'models/**'
+      - '.github/workflows/build-images.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-lambda:
+    name: Build Lambda Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Create Lambda Package
+        run: |
+          mkdir -p dist
+          cd src/lambda/webhook_receiver
+          zip -r ../../../dist/webhook_receiver.zip .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-package
+          path: dist/webhook_receiver.zip
+
+  build-fargate:
+    name: Build Fargate Image
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR Repository
+        id: ecr-repo
+        run: |
+          REPO_URL=$(aws ecr describe-repositories --repository-names quality-agent-processor-dev --query 'repositories[0].repositoryUri' --output text 2>/dev/null || echo "")
+          echo "repository_url=$REPO_URL" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Image
+        if: steps.ecr-repo.outputs.repository_url != ''
+        env:
+          ECR_REPOSITORY: ${{ steps.ecr-repo.outputs.repository_url }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Create build context with all needed files
+          mkdir -p build_context
+          cp -r src/fargate/* build_context/
+          cp -r agents build_context/
+          cp -r models build_context/
+
+          # Build and push
+          cd build_context
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REPOSITORY:latest .
+          docker push $ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REPOSITORY:latest
+
+      - name: Summary
+        if: steps.ecr-repo.outputs.repository_url != ''
+        run: |
+          echo "## Image Built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** \`${{ steps.ecr-repo.outputs.repository_url }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  update-lambda:
+    name: Update Lambda Code
+    runs-on: ubuntu-latest
+    needs: build-lambda
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Lambda Package
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-package
+          path: dist
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update Lambda Function
+        run: |
+          aws lambda update-function-code \
+            --function-name quality-agent-webhook-receiver-dev \
+            --zip-file fileb://dist/webhook_receiver.zip \
+            2>/dev/null || echo "Lambda function not found - will be created by Terraform"
